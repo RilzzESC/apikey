@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>LicenseKey API — Gist Edition</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Epilogue:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#08090d;--s0:#0e0f16;--s1:#13141f;--s2:#1a1b28;
+  --border:#252636;--border2:#2e2f45;
+  --g1:#7c6fff;--g2:#ff6b9d;--g3:#00e5cc;
+  --text:#dde1f0;--muted:#5a5c7a;--muted2:#7c7ea0;
+  --warn:#ffb340;--danger:#ff4d6a;
+  --r:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'Epilogue',sans-serif;min-height:100vh;overflow-x:hidden}
+
+/* ── Animated mesh bg ── */
+body::before{
+  content:'';position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 700px 500px at 10% 20%,rgba(124,111,255,.07) 0,transparent 70%),
+    radial-gradient(ellipse 600px 400px at 90% 70%,rgba(0,229,204,.05) 0,transparent 70%),
+    radial-gradient(ellipse 500px 350px at 50% 100%,rgba(255,107,157,.05) 0,transparent 70%);
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(124,111,255,.025) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(124,111,255,.025) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+}
+
+/* ── Setup overlay ── */
+#setupOverlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(8,9,13,.97);
+  display:flex;align-items:center;justify-content:center;
+  backdrop-filter:blur(8px);
+}
+.setup-box{
+  width:min(560px,92vw);
+  background:var(--s1);
+  border:1px solid var(--border2);
+  border-radius:20px;
+  padding:40px;
+  position:relative;
+  animation:slideUp .4s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.setup-logo{
+  display:flex;align-items:center;gap:14px;margin-bottom:28px;
+}
+.setup-logo .icon{
+  width:52px;height:52px;border-radius:14px;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  flex-shrink:0;
+}
+.setup-logo h1{font-size:22px;font-weight:900;letter-spacing:-0.5px}
+.setup-logo p{font-size:12px;color:var(--muted2);margin-top:2px}
+.setup-step{
+  background:var(--s2);border:1px solid var(--border);border-radius:10px;
+  padding:14px 16px;margin-bottom:12px;display:flex;gap:12px;align-items:flex-start;
+}
+.step-num{
+  width:24px;height:24px;border-radius:50%;
+  background:linear-gradient(135deg,var(--g1),var(--g2));
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;
+}
+.step-body{flex:1}
+.step-body strong{font-size:13px;font-weight:700;display:block;margin-bottom:3px}
+.step-body p{font-size:11px;color:var(--muted2);line-height:1.6}
+.step-body a{color:var(--g1);text-decoration:none}
+.step-body a:hover{text-decoration:underline}
+.setup-form{margin-top:20px}
+.sf-group{margin-bottom:14px}
+.sf-group label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:6px}
+.sf-group input{
+  width:100%;background:var(--s0);border:1px solid var(--border2);border-radius:8px;
+  padding:11px 14px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;
+  transition:border-color .2s;
+}
+.sf-group input:focus{border-color:var(--g1)}
+.sf-group input::placeholder{color:var(--muted)}
+.btn-setup{
+  width:100%;padding:13px;border-radius:10px;border:none;
+  background:linear-gradient(90deg,var(--g1),var(--g2));
+  color:#fff;font-family:'Epilogue',sans-serif;font-size:14px;font-weight:800;
+  cursor:pointer;transition:all .2s;letter-spacing:.3px;margin-top:6px;
+}
+.btn-setup:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 24px rgba(124,111,255,.3)}
+.setup-note{font-size:11px;color:var(--muted);text-align:center;margin-top:14px;line-height:1.6}
+
+/* ── Main layout ── */
+#app{position:relative;z-index:1}
+header{
+  padding:24px 0;
+  border-bottom:1px solid var(--border);
+  background:rgba(8,9,13,.6);
+  backdrop-filter:blur(12px);
+  position:sticky;top:0;z-index:50;
+}
+.hinner{
+  max-width:1140px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;
+}
+.hlogo{display:flex;align-items:center;gap:10px}
+.hlogo-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--g1),var(--g2));display:flex;align-items:center;justify-content:center;font-size:17px}
+.hlogo-name{font-size:18px;font-weight:900;letter-spacing:-.5px}
+.hbadges{display:flex;gap:6px;flex-wrap:wrap}
+.badge{
+  font-family:'IBM Plex Mono',monospace;font-size:10px;padding:3px 10px;
+  border-radius:20px;border:1px solid;white-space:nowrap;
+}
+.bg{border-color:rgba(0,229,204,.3);color:var(--g3);background:rgba(0,229,204,.07)}
+.bp{border-color:rgba(124,111,255,.3);color:var(--g1);background:rgba(124,111,255,.07)}
+.br{border-color:rgba(255,77,106,.3);color:var(--danger);background:rgba(255,77,106,.07)}
+.bw{border-color:rgba(255,179,64,.3);color:var(--warn);background:rgba(255,179,64,.07)}
+
+.hright{display:flex;align-items:center;gap:10px}
+.sync-btn{
+  display:flex;align-items:center;gap:6px;padding:7px 14px;
+  border-radius:8px;border:1px solid var(--border2);
+  background:transparent;color:var(--muted2);
+  font-family:'Epilogue',sans-serif;font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.sync-btn:hover{border-color:var(--g3);color:var(--g3)}
+.sync-btn.spinning svg{animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Tabs ── */
+.tabs-wrap{border-bottom:1px solid var(--border);background:rgba(8,9,13,.4)}
+.tabs{
+  max-width:1140px;margin:0 auto;padding:0 24px;
+  display:flex;gap:2px;overflow-x:auto;
+}
+.tab{
+  padding:12px 18px;border:none;background:none;
+  color:var(--muted);font-family:'Epilogue',sans-serif;
+  font-size:13px;font-weight:700;cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;
+  transition:all .2s;white-space:nowrap;letter-spacing:.2px;
+}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--g1);border-bottom-color:var(--g1)}
+
+/* ── Content ── */
+.content{max-width:1140px;margin:0 auto;padding:28px 24px}
+.panel{display:none}
+.panel.active{display:block;animation:fadeIn .25s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Cards ── */
+.card{
+  background:var(--s0);border:1px solid var(--border);
+  border-radius:var(--r);padding:22px;margin-bottom:18px;
+}
+.card-hd{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}
+@media(max-width:720px){.g2,.g3{grid-template-columns:1fr}}
+
+/* ── Stats ── */
+.stat{background:var(--s1);border:1px solid var(--border);border-radius:10px;padding:18px}
+.stat-v{font-size:38px;font-weight:900;line-height:1;letter-spacing:-1px}
+.stat-l{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-top:6px}
+.cv{color:var(--g1)}.cp{color:var(--g1)}.cb{color:rgba(124,111,255,1)}.cr{color:var(--danger)}.cw{color:var(--warn)}
+
+/* ── Forms ── */
+.fg{margin-bottom:14px}
+.fg label{display:block;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:5px}
+input,select,textarea{
+  width:100%;background:var(--s1);border:1px solid var(--border2);border-radius:8px;
+  padding:10px 13px;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:13px;outline:none;
+  transition:border-color .2s;
+}
+input:focus,select:focus,textarea:focus{border-color:var(--g1)}
+select option{background:var(--s1)}
+input::placeholder{color:var(--muted)}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:10px 18px;border-radius:8px;border:none;
+  font-family:'Epilogue',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .2s;letter-spacing:.3px;
+}
+.btn-p{background:linear-gradient(90deg,var(--g1),var(--g2));color:#fff}
+.btn-p:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,111,255,.3)}
+.btn-o{background:transparent;border:1px solid var(--border2);color:var(--muted2)}
+.btn-o:hover{border-color:var(--g1);color:var(--g1)}
+.btn-d{background:transparent;border:1px solid rgba(255,77,106,.3);color:var(--danger)}
+.btn-d:hover{background:rgba(255,77,106,.08)}
+.btn-sm{padding:6px 12px;font-size:11px;border-radius:6px}
+.btn-w{width:100%;justify-content:center}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none!important}
+
+/* ── Code block ── */
+.cb-wrap{
+  background:var(--s2);border:1px solid var(--border);border-radius:8px;
+  padding:14px;font-family:'IBM Plex Mono',monospace;font-size:12px;line-height:1.7;
+  overflow-x:auto;position:relative;
+}
+.cb-wrap .kw{color:var(--g1)}.cb-wrap .str{color:var(--g3)}.cb-wrap .num{color:var(--warn)}.cb-wrap .cm{color:var(--muted);font-style:italic}
+.cpbtn{
+  position:absolute;top:8px;right:8px;
+  background:var(--border2);border:none;color:var(--muted2);
+  padding:3px 9px;border-radius:4px;font-size:10px;cursor:pointer;
+  font-family:'IBM Plex Mono',monospace;transition:all .2s;
+}
+.cpbtn:hover{background:var(--g1);color:#fff}
+
+/* ── Table ── */
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;padding:9px 13px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);border-bottom:1px solid var(--border)}
+td{padding:11px 13px;font-family:'IBM Plex Mono',monospace;font-size:11px;border-bottom:1px solid rgba(37,38,54,.5);vertical-align:middle}
+tr:hover td{background:rgba(255,255,255,.015)}
+.key-val{color:var(--g3);letter-spacing:.5px}
+
+/* ── Status ── */
+.st{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.5px}
+.st::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+.sta{color:var(--g3);background:rgba(0,229,204,.08);border:1px solid rgba(0,229,204,.2)}
+.ste{color:var(--danger);background:rgba(255,77,106,.08);border:1px solid rgba(255,77,106,.2)}
+.str2{color:var(--muted);background:rgba(90,92,122,.1);border:1px solid var(--border)}
+
+/* ── Alert ── */
+.alert{padding:11px 15px;border-radius:8px;font-size:12px;display:none;margin-bottom:14px;line-height:1.5}
+.alert.show{display:block}
+.al-ok{background:rgba(0,229,204,.07);border:1px solid rgba(0,229,204,.25);color:var(--g3)}
+.al-err{background:rgba(255,77,106,.07);border:1px solid rgba(255,77,106,.25);color:var(--danger)}
+.al-info{background:rgba(124,111,255,.07);border:1px solid rgba(124,111,255,.25);color:var(--g1)}
+.al-warn{background:rgba(255,179,64,.07);border:1px solid rgba(255,179,64,.25);color:var(--warn)}
+
+/* ── Validate result ── */
+#vResult,#qResult{margin-top:14px;padding:14px;border-radius:8px;display:none}
+
+/* ── Endpoint ── */
+.ep{display:flex;align-items:flex-start;gap:10px;padding:13px 0;border-bottom:1px solid var(--border)}
+.ep:last-child{border:none}
+.method{font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;padding:3px 8px;border-radius:4px;min-width:48px;text-align:center;flex-shrink:0;margin-top:2px}
+.mg{background:rgba(0,229,204,.08);color:var(--g3);border:1px solid rgba(0,229,204,.2)}
+.mp{background:rgba(124,111,255,.08);color:var(--g1);border:1px solid rgba(124,111,255,.2)}
+.md{background:rgba(255,77,106,.08);color:var(--danger);border:1px solid rgba(255,77,106,.2)}
+.ep-info .path{font-family:'IBM Plex Mono',monospace;font-size:12px;margin-bottom:3px}
+.ep-info .desc{font-size:11px;color:var(--muted2)}
+
+/* ── Toast ── */
+#toast{
+  position:fixed;bottom:28px;right:28px;z-index:9999;
+  background:var(--s1);border:1px solid var(--border2);border-radius:10px;
+  padding:12px 18px;font-size:13px;font-weight:600;
+  display:flex;align-items:center;gap:10px;
+  transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none;
+  max-width:300px;box-shadow:0 8px 32px rgba(0,0,0,.4);
+}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ── Progress bar ── */
+.prog-wrap{height:3px;background:var(--s2);border-radius:2px;overflow:hidden;margin:10px 0}
+.prog-bar{height:100%;background:linear-gradient(90deg,var(--g1),var(--g2));border-radius:2px;transition:width .3s}
+
+/* ── Divider ── */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── Gist info box ── */
+.gist-info{
+  background:var(--s2);border:1px solid var(--border2);border-radius:8px;
+  padding:12px 15px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted2);
+  display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.gist-info span{color:var(--text)}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+</style>
+</head>
+<body>
+
+<!-- ══════════ SETUP OVERLAY ══════════ -->
+<div id="setupOverlay">
+  <div class="setup-box">
+    <div class="setup-logo">
+      <div class="icon">🔑</div>
+      <div>
+        <h1>LicenseKey API</h1>
+        <p>Gist Edition · Setup Awal</p>
+      </div>
+    </div>
+
+    <div class="setup-step">
+      <div class="step-num">1</div>
+      <div class="step-body">
+        <strong>Buat GitHub Personal Access Token</strong>
+        <p>Buka <a href="https://github.com/settings/tokens/new" target="_blank">github.com/settings/tokens/new</a> → centang scope <strong>gist</strong> → klik Generate Token. Simpan tokennya.</p>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">2</div>
+      <div class="step-body">
+        <strong>Masukkan token & konfigurasi di bawah</strong>
+        <p>Data lisensi akan disimpan di Gist private milik akun Anda. Bisa diakses dari device/browser manapun!</p>
+      </div>
+    </div>
+    <div class="setup-step">
+      <div class="step-num">3</div>
+      <div class="step-body">
+        <strong>Gist ID (opsional — kosongkan untuk auto-buat)</strong>
+        <p>Jika sudah punya Gist, paste ID-nya. Jika kosong, akan dibuat otomatis saat pertama kali save.</p>
+      </div>
+    </div>
+
+    <div class="setup-form">
+      <div class="sf-group">
+        <label>GitHub Personal Access Token *</label>
+        <input type="password" id="cfgToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx"/>
+      </div>
+      <div class="sf-group">
+        <label>Gist ID (opsional)</label>
+        <input type="text" id="cfgGistId" placeholder="Kosongkan untuk auto-buat"/>
+      </div>
+      <div class="sf-group">
+        <label>Admin Password</label>
+        <input type="password" id="cfgAdminPass" placeholder="Password untuk operasi sensitif" value="admin123"/>
+      </div>
+      <button class="btn-setup" onclick="setupSave()">🚀 Mulai Sekarang</button>
+      <p class="setup-note">Token disimpan di localStorage browser Anda saja.<br>Tidak dikirim ke server selain api.github.com.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ TOAST ══════════ -->
+<div id="toast"></div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app" style="display:none">
+
+<header>
+  <div class="hinner">
+    <div class="hlogo">
+      <div class="hlogo-icon">🔑</div>
+      <div>
+        <div class="hlogo-name">LicenseKey <span style="color:var(--g1)">API</span></div>
+      </div>
+    </div>
+    <div class="hbadges">
+      <span class="badge bg" id="storeBadge">● Gist Storage</span>
+      <span class="badge bp" id="gistBadge" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;cursor:pointer" onclick="openGist()">···</span>
+      <span class="badge bw" id="syncBadge">Sync: –</span>
+    </div>
+    <div class="hright">
+      <button class="sync-btn" id="syncBtn" onclick="syncNow()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Sync Gist
+      </button>
+      <button class="btn btn-sm btn-o" onclick="openSetup()">⚙ Config</button>
+    </div>
+  </div>
+</header>
+
+<div class="tabs-wrap">
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard">📊 Dashboard</button>
+    <button class="tab" data-tab="generate">⚡ Generate</button>
+    <button class="tab" data-tab="validate">🔍 Validate</button>
+    <button class="tab" data-tab="manage">📋 Manage</button>
+    <button class="tab" data-tab="api">🌐 API & Docs</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- ── DASHBOARD ── -->
+  <div class="panel active" id="panel-dashboard">
+    <div class="g3" style="margin-bottom:18px">
+      <div class="stat"><div class="stat-v cb" id="stTotal">0</div><div class="stat-l">Total Keys</div></div>
+      <div class="stat"><div class="stat-v cv" id="stActive">0</div><div class="stat-l">Active</div></div>
+      <div class="stat"><div class="stat-v cr" id="stDead">0</div><div class="stat-l">Expired / Revoked</div></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd">⚡ Quick Validate</div>
+        <div class="fg"><input type="text" id="qKey" placeholder="Paste license key…" oninput="this.value=this.value.toUpperCase()"/></div>
+        <button class="btn btn-p btn-w" onclick="quickValidate()">Cek Sekarang</button>
+        <div id="qResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">📡 Storage Info</div>
+        <div class="gist-info">
+          <div>Gist ID <span id="infoGistId">–</span></div>
+          <div>Last Sync <span id="infoLastSync">–</span></div>
+        </div>
+        <div style="margin-top:12px">
+          <div class="prog-wrap"><div class="prog-bar" id="progBar" style="width:0%"></div></div>
+          <div style="font-size:11px;color:var(--muted);display:flex;justify-content:space-between;margin-top:4px">
+            <span id="progLabel">0 keys</span>
+            <span id="progCapacity">0 / ∞</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-o btn-sm" onclick="syncNow()">⟳ Sync sekarang</button>
+          <button class="btn btn-o btn-sm" onclick="exportJSON()">⬇ Export JSON</button>
+          <button class="btn btn-o btn-sm" onclick="openGist()">↗ Buka Gist</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">🔗 Public Validate Endpoint</div>
+      <p style="font-size:12px;color:var(--muted2);margin-bottom:12px">Bagikan URL ini ke aplikasi Anda. Siapapun bisa validasi key tanpa perlu token admin.</p>
+      <div class="cb-wrap">
+        <button class="cpbtn" onclick="copyEl('endpointUrl')">copy</button>
+        <span id="endpointUrl" style="color:var(--g3)"></span>
+      </div>
+      <p style="font-size:11px;color:var(--muted);margin-top:10px">
+        ⚠️ Gist ID dalam URL adalah <strong>public read</strong>. Token GitHub Anda tetap tersembunyi di browser admin.
+      </p>
+    </div>
+  </div>
+
+  <!-- ── GENERATE ── -->
+  <div class="panel" id="panel-generate">
+    <div class="g2">
+      <div>
+        <div class="card">
+          <div class="card-hd">⚡ Generate License Key</div>
+          <div class="alert al-ok" id="genAlert"></div>
+          <div class="fg"><label>Nama / Owner *</label><input type="text" id="gName" placeholder="Budi Santoso"/></div>
+          <div class="fg"><label>Email</label><input type="email" id="gEmail" placeholder="budi@email.com"/></div>
+          <div class="fg">
+            <label>Durasi</label>
+            <select id="gDur">
+              <option value="1">1 Hari (Trial)</option>
+              <option value="7">7 Hari</option>
+              <option value="30" selected>30 Hari (1 Bulan)</option>
+              <option value="90">90 Hari (3 Bulan)</option>
+              <option value="180">180 Hari (6 Bulan)</option>
+              <option value="365">365 Hari (1 Tahun)</option>
+              <option value="0">Lifetime ∞</option>
+              <option value="c">Custom…</option>
+            </select>
+          </div>
+          <div class="fg" id="customDays" style="display:none"><label>Jumlah Hari</label><input type="number" id="gCustom" placeholder="45" min="1"/></div>
+          <div class="fg"><label>Produk / App</label><input type="text" id="gProd" placeholder="MyApp Pro"/></div>
+          <div class="fg"><label>Max Aktivasi</label><input type="number" id="gMaxAct" value="1" min="1"/></div>
+          <div class="fg">
+            <label>Format Key</label>
+            <select id="gFmt">
+              <option value="XXXX-XXXX-XXXX-XXXX">XXXX-XXXX-XXXX-XXXX</option>
+              <option value="XXXXXXXX-XXXX-XXXX">XXXXXXXX-XXXX-XXXX</option>
+              <option value="XX-XXXX-XXXX-XXXX-XX">XX-XXXX-XXXX-XXXX-XX</option>
+              <option value="XXXX-XXXX-XXXX-XXXX-XXXX">XXXX-XXXX-XXXX-XXXX-XXXX</option>
+            </select>
+          </div>
+          <button class="btn btn-p btn-w" id="genBtn" onclick="genKey()">🔑 Generate & Simpan ke Gist</button>
+        </div>
+      </div>
+      <div>
+        <div class="card" id="genResultCard" style="display:none">
+          <div class="card-hd">✅ Key Dibuat</div>
+          <div class="fg">
+            <label>License Key</label>
+            <div style="display:flex;gap:8px">
+              <input type="text" id="genResKey" readonly style="color:var(--g3);font-weight:700;letter-spacing:1px"/>
+              <button class="btn btn-o btn-sm" onclick="copyEl('genResKey')">copy</button>
+            </div>
+          </div>
+          <div id="genResDetails"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-hd">⚡ Bulk Generate</div>
+          <div class="fg"><label>Jumlah Key</label><input type="number" id="bCount" value="5" min="1" max="50"/></div>
+          <div class="fg"><label>Durasi (hari)</label><input type="number" id="bDays" value="30" min="1"/></div>
+          <div class="fg"><label>Produk</label><input type="text" id="bProd" placeholder="MyApp Pro"/></div>
+          <button class="btn btn-p btn-w" id="bulkBtn" onclick="bulkGen()">⚡ Bulk Generate</button>
+          <div id="bulkRes" style="margin-top:12px"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── VALIDATE ── -->
+  <div class="panel" id="panel-validate">
+    <div class="g2">
+      <div class="card">
+        <div class="card-hd">🔍 Validate License Key</div>
+        <div class="fg"><label>License Key *</label><input type="text" id="vKey" placeholder="Masukkan license key…" oninput="this.value=this.value.toUpperCase()"/></div>
+        <div class="fg"><label>Product Filter (opsional)</label><input type="text" id="vProd" placeholder="Filter by product"/></div>
+        <button class="btn btn-p btn-w" onclick="validateKey()">🔍 Validate</button>
+        <div id="vResult"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-hd">📡 Response Contoh</div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:10px">Valid:</p>
+        <div class="cb-wrap"><pre><span class="kw">{</span>
+  <span class="str">"valid"</span>: <span class="kw">true</span>,
+  <span class="str">"key"</span>: <span class="str">"XXXX-XXXX-XXXX-XXXX"</span>,
+  <span class="str">"owner"</span>: <span class="str">"Budi Santoso"</span>,
+  <span class="str">"product"</span>: <span class="str">"MyApp Pro"</span>,
+  <span class="str">"expires_at"</span>: <span class="str">"2025-12-31"</span>,
+  <span class="str">"days_remaining"</span>: <span class="num">120</span>,
+  <span class="str">"activations"</span>: <span class="num">1</span>,
+  <span class="str">"max_activations"</span>: <span class="num">3</span>
+<span class="kw">}</span></pre></div>
+        <div class="divider"></div>
+        <p style="font-size:11px;color:var(--muted2);margin-bottom:10px">Tidak valid:</p>
+        <div class="cb-wrap"><pre><span class="kw">{</span>
+  <span class="str">"valid"</span>: <span class="kw">false</span>,
+  <span class="str">"error"</span>: <span class="str">"License expired"</span>,
+  <span class="str">"expired_at"</span>: <span class="str">"2024-06-01"</span>
+<span class="kw">}</span></pre></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── MANAGE ── -->
+  <div class="panel" id="panel-manage">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+      <input type="text" id="searchQ" placeholder="🔎 Cari key, nama, produk…" oninput="renderTable()" style="width:260px"/>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-o btn-sm" onclick="syncNow()">⟳ Sync</button>
+        <button class="btn btn-o btn-sm" onclick="exportJSON()">⬇ Export</button>
+        <button class="btn btn-d btn-sm" onclick="clearAll()">🗑 Hapus Semua</button>
+      </div>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden">
+      <div class="tw">
+        <table>
+          <thead>
+            <tr>
+              <th>Key</th><th>Owner</th><th>Product</th><th>Dibuat</th><th>Expires</th><th>Status</th><th>Akt.</th><th>Aksi</th>
+            </tr>
+          </thead>
+          <tbody id="keyTbody">
+            <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:40px">Belum ada key.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── API & DOCS ── -->
+  <div class="panel" id="panel-api">
+    <div class="card">
+      <div class="card-hd">🌐 Cara Kerja Integrasi</div>
+      <p style="font-size:13px;color:var(--muted2);line-height:1.8;margin-bottom:14px">
+        Data lisensi tersimpan di <strong style="color:var(--text)">GitHub Gist</strong> (file JSON) menggunakan GitHub API.
+        Validasi bisa dilakukan siapapun dengan membaca Gist secara publik — tanpa token.
+        Operasi tulis (generate, revoke) hanya bisa dilakukan dengan token admin di halaman ini.
+      </p>
+      <div class="alert al-info show">
+        💡 Gist yang digunakan bisa <strong>public</strong> (siapapun bisa baca via URL) atau <strong>secret</strong> (hanya yang punya link). Keduanya bisa dibaca via API tanpa auth.
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">🔗 Endpoints (via Gist Raw)</div>
+      <div class="ep">
+        <span class="method mg">GET</span>
+        <div class="ep-info">
+          <div class="path">https://gist.githubusercontent.com/{user}/{gist_id}/raw/licenses.json</div>
+          <div class="desc">Baca semua data lisensi (JSON). Bisa diakses tanpa token. Cocok untuk client-side validation.</div>
+        </div>
+      </div>
+      <div class="ep">
+        <span class="method mp">PATCH</span>
+        <div class="ep-info">
+          <div class="path">https://api.github.com/gists/{gist_id}</div>
+          <div class="desc">Update data lisensi. Butuh GitHub token. Hanya dari admin panel ini.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">💻 Integrasi di Aplikasi Anda</div>
+      <p style="font-size:12px;color:var(--muted2);margin-bottom:12px">Validasi key dari aplikasi lain (JavaScript):</p>
+      <div class="cb-wrap" style="position:relative">
+        <button class="cpbtn" onclick="copyEl('codeEx1')">copy</button>
+        <pre id="codeEx1"><span class="cm">// Tidak perlu token! Gist raw bisa dibaca publik</span>
+<span class="kw">const</span> GIST_RAW = <span class="str">'<span id="docRaw">https://gist.githubusercontent.com/USER/GIST_ID/raw/licenses.json</span>'</span>;
+
+<span class="kw">async function</span> validateLicense(key) {
+  <span class="cm">// Fetch langsung dari Gist (no-cors tidak perlu, Gist support CORS)</span>
+  <span class="kw">const</span> res  = <span class="kw">await</span> fetch(GIST_RAW + <span class="str">'?t='</span> + Date.now()); <span class="cm">// cache bust</span>
+  <span class="kw">const</span> data = <span class="kw">await</span> res.json();
+  <span class="kw">const</span> entry = data.keys.find(k => k.key === key);
+
+  <span class="kw">if</span> (!entry) <span class="kw">return</span> { valid: <span class="kw">false</span>, error: <span class="str">'Key not found'</span> };
+  <span class="kw">if</span> (entry.status === <span class="str">'revoked'</span>) <span class="kw">return</span> { valid: <span class="kw">false</span>, error: <span class="str">'Revoked'</span> };
+
+  <span class="kw">const</span> today = <span class="kw">new</span> Date().toISOString().split(<span class="str">'T'</span>)[<span class="num">0</span>];
+  <span class="kw">if</span> (entry.expires_at && entry.expires_at < today)
+    <span class="kw">return</span> { valid: <span class="kw">false</span>, error: <span class="str">'Expired'</span>, expired_at: entry.expires_at };
+
+  <span class="kw">const</span> daysLeft = entry.expires_at
+    ? Math.ceil((<span class="kw">new</span> Date(entry.expires_at) - <span class="kw">new</span> Date(today)) / <span class="num">86400000</span>)
+    : <span class="kw">null</span>;
+
+  <span class="kw">return</span> { valid: <span class="kw">true</span>, owner: entry.name, product: entry.product,
+    expires_at: entry.expires_at, days_remaining: daysLeft };
+}
+
+<span class="cm">// Contoh penggunaan:</span>
+<span class="kw">const</span> result = <span class="kw">await</span> validateLicense(<span class="str">'XXXX-XXXX-XXXX-XXXX'</span>);
+console.log(result);</pre>
+      </div>
+      <div class="divider"></div>
+      <p style="font-size:12px;color:var(--muted2);margin-bottom:12px">Python:</p>
+      <div class="cb-wrap" style="position:relative">
+        <button class="cpbtn" onclick="copyEl('codeEx2')">copy</button>
+        <pre id="codeEx2"><span class="kw">import</span> requests, datetime
+
+GIST_RAW = <span class="str">'<span id="docRaw2">https://gist.githubusercontent.com/USER/GIST_ID/raw/licenses.json</span>'</span>
+
+<span class="kw">def</span> validate_license(key):
+    data  = requests.get(GIST_RAW, params={<span class="str">'t'</span>: datetime.datetime.now().timestamp()}).json()
+    entry = next((k <span class="kw">for</span> k <span class="kw">in</span> data[<span class="str">'keys'</span>] <span class="kw">if</span> k[<span class="str">'key'</span>] == key), <span class="kw">None</span>)
+    <span class="kw">if not</span> entry: <span class="kw">return</span> {<span class="str">'valid'</span>: <span class="kw">False</span>, <span class="str">'error'</span>: <span class="str">'Not found'</span>}
+    <span class="kw">if</span> entry[<span class="str">'status'</span>] == <span class="str">'revoked'</span>: <span class="kw">return</span> {<span class="str">'valid'</span>: <span class="kw">False</span>, <span class="str">'error'</span>: <span class="str">'Revoked'</span>}
+    today = datetime.date.today().isoformat()
+    <span class="kw">if</span> entry.get(<span class="str">'expires_at'</span>) <span class="kw">and</span> entry[<span class="str">'expires_at'</span>] < today:
+        <span class="kw">return</span> {<span class="str">'valid'</span>: <span class="kw">False</span>, <span class="str">'error'</span>: <span class="str">'Expired'</span>}
+    <span class="kw">return</span> {<span class="str">'valid'</span>: <span class="kw">True</span>, <span class="str">'owner'</span>: entry[<span class="str">'name'</span>], <span class="str">'product'</span>: entry[<span class="str">'product'</span>]}
+
+print(validate_license(<span class="str">'XXXX-XXXX-XXXX-XXXX'</span>))</pre>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-hd">🔐 Config</div>
+      <div class="g2">
+        <div class="fg"><label>GitHub Token</label><input type="password" id="cfgToken2" placeholder="ghp_…"/></div>
+        <div class="fg"><label>Gist ID</label><input type="text" id="cfgGistId2" placeholder="auto"/></div>
+      </div>
+      <div class="fg"><label>Admin Password</label><input type="password" id="cfgPass2" placeholder="Password"/></div>
+      <button class="btn btn-p" onclick="saveConfig2()">💾 Simpan Config</button>
+      <button class="btn btn-d btn-sm" onclick="resetAll()" style="margin-left:8px">⚠ Reset Semua</button>
+    </div>
+  </div>
+
+</div><!-- /content -->
+</div><!-- /app -->
+
+<script>
+// ════════════════════════════════════════════
+// CONFIG & STATE
+// ════════════════════════════════════════════
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } },
+  set: (k, v) => localStorage.setItem(k, JSON.stringify(v)),
+  del: k => localStorage.removeItem(k)
+};
+
+let CFG = LS.get('lka_cfg') || {};
+let DB  = { keys: [], updated_at: null };   // in-memory mirror of Gist
+
+function cfg(k)    { return CFG[k] || '' }
+function hasCfg()  { return !!CFG.token }
+
+// ════════════════════════════════════════════
+// SETUP
+// ════════════════════════════════════════════
+function setupSave() {
+  const token  = document.getElementById('cfgToken').value.trim();
+  const gistId = document.getElementById('cfgGistId').value.trim();
+  const pass   = document.getElementById('cfgAdminPass').value.trim();
+  if (!token) { toast('Token tidak boleh kosong', 'err'); return; }
+  CFG = { token, gistId, pass: pass || 'admin123' };
+  LS.set('lka_cfg', CFG);
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+
+function openSetup() {
+  document.getElementById('cfgToken').value    = CFG.token  || '';
+  document.getElementById('cfgGistId').value   = CFG.gistId || '';
+  document.getElementById('cfgAdminPass').value = CFG.pass  || '';
+  document.getElementById('setupOverlay').style.display = 'flex';
+}
+
+// ════════════════════════════════════════════
+// GITHUB GIST API
+// ════════════════════════════════════════════
+const GIST_FILE = 'licenses.json';
+
+async function gistGet() {
+  if (!CFG.gistId) return null;
+  const r = await fetch(`https://api.github.com/gists/${CFG.gistId}`, {
+    headers: { Authorization: `Bearer ${CFG.token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+  });
+  if (!r.ok) throw new Error(`Gist GET failed: ${r.status}`);
+  const g = await r.json();
+  const raw = g.files?.[GIST_FILE]?.content;
+  if (!raw) throw new Error('File not found in Gist');
+  return JSON.parse(raw);
+}
+
+async function gistPatch(data) {
+  const body = { files: { [GIST_FILE]: { content: JSON.stringify(data, null, 2) } } };
+  if (!CFG.gistId) {
+    // Create new Gist
+    const r = await fetch('https://api.github.com/gists', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${CFG.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+      body: JSON.stringify({ description: 'LicenseKey API Data', public: false, files: body.files })
+    });
+    if (!r.ok) throw new Error(`Gist CREATE failed: ${r.status}`);
+    const g = await r.json();
+    CFG.gistId = g.id;
+    LS.set('lka_cfg', CFG);
+    updateGistBadge();
+    return;
+  }
+  const r = await fetch(`https://api.github.com/gists/${CFG.gistId}`, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${CFG.token}`, 'Content-Type': 'application/json', 'X-GitHub-Api-Version': '2022-11-28' },
+    body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Gist PATCH failed: ${r.status}`);
+}
+
+// Read-only: fetch raw without auth (public Gist)
+async function gistGetRaw() {
+  if (!CFG.gistId) return null;
+  const r = await fetch(`https://gist.githubusercontent.com/raw/${CFG.gistId}/${GIST_FILE}?t=${Date.now()}`);
+  if (!r.ok) return null;
+  return r.json();
+}
+
+async function syncNow(silent = false) {
+  setSyncSpinner(true);
+  try {
+    let data = await gistGet();
+    if (!data) { data = { keys: [], updated_at: new Date().toISOString() }; }
+    DB = data;
+    updateStats();
+    renderTable();
+    updateSyncBadge();
+    if (!silent) toast('✓ Sync berhasil', 'ok');
+  } catch (e) {
+    if (!silent) toast('Sync gagal: ' + e.message, 'err');
+    console.error(e);
+  }
+  setSyncSpinner(false);
+}
+
+async function pushDB(action) {
+  DB.updated_at = new Date().toISOString();
+  await gistPatch(DB);
+  updateStats();
+  renderTable();
+  updateSyncBadge();
+}
+
+// ════════════════════════════════════════════
+// KEY UTILS
+// ════════════════════════════════════════════
+function seg(n) {
+  const c = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  return Array.from({length: n}, () => c[Math.floor(Math.random() * c.length)]).join('');
+}
+function makeKey(fmt) {
+  return fmt.split('-').map(s => seg(s.length)).join('-');
+}
+function today() { return new Date().toISOString().split('T')[0]; }
+function expiresDate(days) {
+  if (!days || days == 0) return null;
+  return new Date(Date.now() + days * 86400000).toISOString().split('T')[0];
+}
+function daysLeft(exp) {
+  if (!exp) return null;
+  return Math.ceil((new Date(exp) - new Date(today())) / 86400000);
+}
+function isExpired(e) { return e.expires_at && e.expires_at < today(); }
+function isActive(e)  { return e.status !== 'revoked' && !isExpired(e); }
+
+// ════════════════════════════════════════════
+// GENERATE
+// ════════════════════════════════════════════
+async function genKey() {
+  const name   = document.getElementById('gName').value.trim();
+  const email  = document.getElementById('gEmail').value.trim();
+  const durSel = document.getElementById('gDur').value;
+  const prod   = document.getElementById('gProd').value.trim() || 'Default';
+  const maxAct = parseInt(document.getElementById('gMaxAct').value) || 1;
+  const fmt    = document.getElementById('gFmt').value;
+  let days = durSel === 'c' ? parseInt(document.getElementById('gCustom').value) : parseInt(durSel);
+
+  if (!name) { toast('Nama tidak boleh kosong', 'err'); return; }
+
+  const key = makeKey(fmt);
+  const entry = {
+    key, name, email, product: prod,
+    created_at: today(), expires_at: expiresDate(days),
+    days: days || 'lifetime', max_activations: maxAct, activations: 0, status: 'active'
+  };
+
+  setLoading('genBtn', true, 'Menyimpan…');
+  try {
+    DB.keys.push(entry);
+    await pushDB('generate');
+    document.getElementById('genResKey').value = key;
+    document.getElementById('genResDetails').innerHTML = infoGrid({
+      Owner: name, Product: prod, Email: email || '–',
+      Created: entry.created_at, Expires: entry.expires_at || '∞ Lifetime',
+      'Max Akt.': maxAct, Status: '<span class="st sta">ACTIVE</span>'
+    });
+    document.getElementById('genResultCard').style.display = 'block';
+    showAlert('genAlert', '✅ Key berhasil dibuat & disimpan ke Gist!', 'ok');
+    toast('Key berhasil dibuat', 'ok');
+  } catch(e) {
+    DB.keys.pop(); // rollback
+    toast('Gagal: ' + e.message, 'err');
+  }
+  setLoading('genBtn', false, '🔑 Generate & Simpan ke Gist');
+}
+
+async function bulkGen() {
+  const count = Math.min(parseInt(document.getElementById('bCount').value) || 5, 50);
+  const days  = parseInt(document.getElementById('bDays').value) || 30;
+  const prod  = document.getElementById('bProd').value.trim() || 'Default';
+  const newKeys = [];
+
+  setLoading('bulkBtn', true, 'Generating…');
+  try {
+    for (let i = 0; i < count; i++) {
+      const key = makeKey('XXXX-XXXX-XXXX-XXXX');
+      DB.keys.push({ key, name: `Bulk-${i+1}`, email: '', product: prod,
+        created_at: today(), expires_at: expiresDate(days), days,
+        max_activations: 1, activations: 0, status: 'active' });
+      newKeys.push(key);
+    }
+    await pushDB('bulk');
+    document.getElementById('bulkRes').innerHTML = `
+      <div class="cb-wrap" style="max-height:180px;overflow-y:auto;margin-top:8px">
+        <button class="cpbtn" onclick="navigator.clipboard.writeText(document.getElementById('bkTxt').innerText)">copy all</button>
+        <div id="bkTxt" style="white-space:pre">${newKeys.join('\n')}</div>
+      </div>
+      <div style="font-size:12px;color:var(--g3);margin-top:8px">✅ ${count} keys dibuat & disimpan</div>`;
+    toast(`${count} keys berhasil dibuat`, 'ok');
+  } catch(e) {
+    DB.keys.splice(DB.keys.length - newKeys.length, newKeys.length);
+    toast('Gagal: ' + e.message, 'err');
+  }
+  setLoading('bulkBtn', false, '⚡ Bulk Generate');
+}
+
+// ════════════════════════════════════════════
+// VALIDATE
+// ════════════════════════════════════════════
+function doValidate(key, prodFilter) {
+  if (!key) return { valid: false, error: 'Key tidak boleh kosong' };
+  const e = DB.keys.find(k => k.key === key);
+  if (!e) return { valid: false, error: 'Key tidak ditemukan' };
+  if (e.status === 'revoked') return { valid: false, error: 'Key telah direvoke', revoked_at: e.revoked_at };
+  if (prodFilter && e.product.toLowerCase() !== prodFilter.toLowerCase())
+    return { valid: false, error: 'Key tidak cocok untuk produk ini' };
+  if (isExpired(e)) return { valid: false, error: 'License expired', expired_at: e.expires_at };
+  return {
+    valid: true, key: e.key, owner: e.name, email: e.email, product: e.product,
+    created_at: e.created_at, expires_at: e.expires_at || null,
+    days_remaining: daysLeft(e.expires_at), activations: e.activations,
+    max_activations: e.max_activations, status: e.status
+  };
+}
+
+function validateKey() {
+  const r = doValidate(
+    document.getElementById('vKey').value.trim().toUpperCase(),
+    document.getElementById('vProd').value.trim()
+  );
+  renderVResult('vResult', r);
+}
+
+function quickValidate() {
+  const r = doValidate(document.getElementById('qKey').value.trim().toUpperCase(), '');
+  renderVResult('qResult', r);
+}
+
+function renderVResult(id, r) {
+  const el = document.getElementById(id);
+  el.style.display = 'block';
+  if (r.valid) {
+    el.style.cssText = 'background:rgba(0,229,204,.06);border:1px solid rgba(0,229,204,.2);border-radius:8px;padding:14px;margin-top:14px;display:block';
+    el.innerHTML = `<div style="color:var(--g3);font-size:15px;font-weight:800;margin-bottom:10px">✅ KEY VALID</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-family:'IBM Plex Mono',monospace;font-size:11px">
+        ${Object.entries({Key:r.key,Owner:r.owner,Product:r.product,Email:r.email||'–',Expires:r.expires_at||'∞','Days Left':r.days_remaining===null?'∞':r.days_remaining+' hari',Activations:`${r.activations}/${r.max_activations}`})
+          .map(([k,v])=>`<div><span style="color:var(--muted)">${k}:</span> <strong>${v}</strong></div>`).join('')}
+      </div>`;
+  } else {
+    el.style.cssText = 'background:rgba(255,77,106,.06);border:1px solid rgba(255,77,106,.2);border-radius:8px;padding:14px;margin-top:14px;display:block';
+    el.innerHTML = `<div style="color:var(--danger);font-size:15px;font-weight:800;margin-bottom:8px">❌ KEY TIDAK VALID</div>
+      <div style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r.error}</div>
+      ${r.expired_at ? `<div style="font-size:11px;color:var(--muted);margin-top:4px">Expired: ${r.expired_at}</div>` : ''}`;
+  }
+}
+
+// ════════════════════════════════════════════
+// MANAGE TABLE
+// ════════════════════════════════════════════
+function renderTable() {
+  const q = (document.getElementById('searchQ')?.value || '').toLowerCase();
+  const rows = DB.keys.filter(k => !q || k.key.toLowerCase().includes(q) || k.name.toLowerCase().includes(q) || k.product.toLowerCase().includes(q));
+  const tb = document.getElementById('keyTbody');
+  if (!rows.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:40px">Tidak ada key.</td></tr>';
+    return;
+  }
+  tb.innerHTML = rows.map(k => {
+    const exp = isExpired(k);
+    const badge = k.status === 'revoked' ? '<span class="st str2">REVOKED</span>'
+      : exp ? '<span class="st ste">EXPIRED</span>'
+      : '<span class="st sta">ACTIVE</span>';
+    return `<tr>
+      <td><span class="key-val">${k.key}</span></td>
+      <td>${k.name}</td>
+      <td>${k.product}</td>
+      <td>${k.created_at}</td>
+      <td>${k.expires_at || '∞'}</td>
+      <td>${badge}</td>
+      <td>${k.activations}/${k.max_activations}</td>
+      <td style="display:flex;gap:5px;flex-wrap:wrap">
+        <button class="btn btn-o btn-sm" onclick="addActivation('${k.key}')">+1 Akt</button>
+        <button class="btn btn-d btn-sm" onclick="revokeKey('${k.key}')">Revoke</button>
+        <button class="btn btn-sm" style="border:1px solid var(--border2);color:var(--muted);background:none" onclick="delKey('${k.key}')">🗑</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function revokeKey(key) {
+  if (!confirm(`Revoke key ${key}?`)) return;
+  const e = DB.keys.find(k => k.key === key);
+  if (e) { e.status = 'revoked'; e.revoked_at = today(); }
+  try { await pushDB('revoke'); toast('Key direvoke', 'ok'); } catch(e) { toast('Gagal', 'err'); }
+}
+
+async function delKey(key) {
+  if (!confirm(`Hapus key ${key}?`)) return;
+  DB.keys = DB.keys.filter(k => k.key !== key);
+  try { await pushDB('delete'); toast('Key dihapus', 'ok'); } catch(e) { toast('Gagal', 'err'); }
+}
+
+async function addActivation(key) {
+  const e = DB.keys.find(k => k.key === key);
+  if (e) e.activations = (e.activations || 0) + 1;
+  try { await pushDB('activate'); toast('+1 aktivasi', 'ok'); } catch(e) { toast('Gagal', 'err'); }
+}
+
+async function clearAll() {
+  if (!confirm('Hapus SEMUA key? Tidak bisa dibatalkan!')) return;
+  DB.keys = [];
+  try { await pushDB('clear'); toast('Semua key dihapus', 'ok'); } catch(e) { toast('Gagal', 'err'); }
+}
+
+// ════════════════════════════════════════════
+// UI HELPERS
+// ════════════════════════════════════════════
+function updateStats() {
+  const total  = DB.keys.length;
+  const active = DB.keys.filter(isActive).length;
+  document.getElementById('stTotal').textContent  = total;
+  document.getElementById('stActive').textContent = active;
+  document.getElementById('stDead').textContent   = total - active;
+  document.getElementById('progLabel').textContent    = `${total} keys`;
+  document.getElementById('progCapacity').textContent = `${active} aktif`;
+  document.getElementById('progBar').style.width = total ? Math.min(total / 200 * 100, 100) + '%' : '0%';
+}
+
+function updateGistBadge() {
+  const id = CFG.gistId;
+  document.getElementById('gistBadge').textContent = id ? id.slice(0, 20) + '…' : 'No Gist';
+  document.getElementById('infoGistId').textContent = id || '–';
+
+  const rawUrl = id ? `https://gist.githubusercontent.com/raw/${id}/${GIST_FILE}` : '–';
+  const epEl = document.getElementById('endpointUrl');
+  if (epEl) epEl.textContent = rawUrl;
+
+  const d1 = document.getElementById('docRaw');
+  const d2 = document.getElementById('docRaw2');
+  if (d1) d1.textContent = rawUrl;
+  if (d2) d2.textContent = rawUrl;
+}
+
+function updateSyncBadge() {
+  const now = new Date().toLocaleTimeString('id-ID', {hour:'2-digit', minute:'2-digit'});
+  document.getElementById('syncBadge').textContent  = `Sync: ${now}`;
+  document.getElementById('infoLastSync').textContent = now;
+}
+
+function setSyncSpinner(on) {
+  document.getElementById('syncBtn').classList.toggle('spinning', on);
+}
+
+function setLoading(id, on, txt) {
+  const el = document.getElementById(id);
+  el.disabled = on;
+  el.textContent = txt;
+}
+
+function showAlert(id, msg, type) {
+  const el = document.getElementById(id);
+  el.className = `alert al-${type} show`;
+  el.textContent = msg;
+}
+
+function infoGrid(obj) {
+  return `<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px">
+    ${Object.entries(obj).map(([k,v]) => `
+      <div style="background:var(--s2);border:1px solid var(--border);border-radius:6px;padding:8px 10px">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);margin-bottom:2px">${k}</div>
+        <div style="font-family:'IBM Plex Mono',monospace;font-size:11px">${v}</div>
+      </div>`).join('')}
+  </div>`;
+}
+
+function copyEl(id) {
+  navigator.clipboard.writeText(document.getElementById(id).value || document.getElementById(id).textContent || document.getElementById(id).innerText);
+  toast('Copied!', 'ok');
+}
+
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `licenses-${today()}.json`;
+  a.click();
+}
+
+function openGist() {
+  if (CFG.gistId) window.open(`https://gist.github.com/${CFG.gistId}`, '_blank');
+}
+
+function saveConfig2() {
+  CFG.token  = document.getElementById('cfgToken2').value.trim() || CFG.token;
+  CFG.gistId = document.getElementById('cfgGistId2').value.trim() || CFG.gistId;
+  CFG.pass   = document.getElementById('cfgPass2').value.trim() || CFG.pass;
+  LS.set('lka_cfg', CFG);
+  updateGistBadge();
+  toast('Config disimpan', 'ok');
+}
+
+function resetAll() {
+  if (!confirm('Reset semua config & data lokal?')) return;
+  localStorage.clear();
+  location.reload();
+}
+
+// Toast
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  const colors = { ok: 'var(--g3)', err: 'var(--danger)', info: 'var(--g1)', warn: 'var(--warn)' };
+  el.style.color = colors[type] || colors.ok;
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+    this.classList.add('active');
+    const id = 'panel-' + this.dataset.tab;
+    document.getElementById(id).classList.add('active');
+    if (this.dataset.tab === 'manage') renderTable();
+    if (this.dataset.tab === 'api') {
+      document.getElementById('cfgToken2').value = CFG.token || '';
+      document.getElementById('cfgGistId2').value = CFG.gistId || '';
+      document.getElementById('cfgPass2').value = CFG.pass || '';
+    }
+  });
+});
+
+// Duration select
+document.getElementById('gDur').addEventListener('change', function() {
+  document.getElementById('customDays').style.display = this.value === 'c' ? 'block' : 'none';
+});
+
+// ════════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════════
+async function initApp() {
+  updateGistBadge();
+  if (CFG.gistId) {
+    toast('Memuat data dari Gist…', 'info');
+    await syncNow(true);
+  } else {
+    // Init empty DB
+    DB = { keys: [], updated_at: null };
+    updateStats();
+  }
+}
+
+// Boot
+if (hasCfg()) {
+  document.getElementById('setupOverlay').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  initApp();
+}
+</script>
+</body>
+</html>
